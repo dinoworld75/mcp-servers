@@ -1,0 +1,79 @@
+services:
+  linkedin:
+    build:
+      context: ./linkedin
+      dockerfile: ../Dockerfile
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.mcp-linkedin.rule=Host(`linkedin.mcp.lasupermachine.fr`)"
+      - "traefik.http.routers.mcp-linkedin.entrypoints=https"
+      - "traefik.http.routers.mcp-linkedin.tls=true"
+      - "traefik.http.routers.mcp-linkedin.tls.certresolver=letsencrypt"
+      - "traefik.http.services.mcp-linkedin.loadbalancer.server.port=8080"
+    networks:
+      - coolify
+
+  annuaire:
+    build:
+      context: ./annuaire
+      dockerfile: ../Dockerfile
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.mcp-annuaire.rule=Host(`annuaire.mcp.lasupermachine.fr`)"
+      - "traefik.http.routers.mcp-annuaire.entrypoints=https"
+      - "traefik.http.routers.mcp-annuaire.tls=true"
+      - "traefik.http.routers.mcp-annuaire.tls.certresolver=letsencrypt"
+      - "traefik.http.services.mcp-annuaire.loadbalancer.server.port=8080"
+    networks:
+      - coolify
+
+  serp:
+    build:
+      context: ./serp
+      dockerfile: ../Dockerfile
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.mcp-serp.rule=Host(`serp.mcp.lasupermachine.fr`)"
+      - "traefik.http.routers.mcp-serp.entrypoints=https"
+      - "traefik.http.routers.mcp-serp.tls=true"
+      - "traefik.http.routers.mcp-serp.tls.certresolver=letsencrypt"
+      - "traefik.http.services.mcp-serp.loadbalancer.server.port=8080"
+    networks:
+      - coolify
+
+  rdap:
+    build:
+      context: ./rdap
+      dockerfile: ../Dockerfile
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.mcp-rdap.rule=Host(`rdap.mcp.lasupermachine.fr`)"
+      - "traefik.http.routers.mcp-rdap.entrypoints=https"
+      - "traefik.http.routers.mcp-rdap.tls=true"
+      - "traefik.http.routers.mcp-rdap.tls.certresolver=letsencrypt"
+      - "traefik.http.services.mcp-rdap.loadbalancer.server.port=8080"
+    networks:
+      - coolify
+
+  siret-extractor:
+    build:
+      context: ./siret-extractor
+      dockerfile: ../Dockerfile
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.mcp-siret-extractor.rule=Host(`siret-extractor.mcp.lasupermachine.fr`)"
+      - "traefik.http.routers.mcp-siret-extractor.entrypoints=https"
+      - "traefik.http.routers.mcp-siret-extractor.tls=true"
+      - "traefik.http.routers.mcp-siret-extractor.tls.certresolver=letsencrypt"
+      - "traefik.http.services.mcp-siret-extractor.loadbalancer.server.port=8080"
+    networks:
+      - coolify
+
+networks:
+  coolify:
+    external: true
