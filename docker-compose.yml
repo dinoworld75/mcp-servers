@@ -7,18 +7,19 @@ services:
     pull_policy: build
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-sf", "http://localhost:8080/mcp", "-H", "Accept: text/event-stream", "-o", "/dev/null"]
+      test: ["CMD", "curl", "-s", "--max-time", "5", "-o", "/dev/null", "http://localhost:8080/"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 10s
+      start_period: 15s
     labels:
       - traefik.enable=true
       - 'traefik.http.routers.mcp-linkedin.rule=Host(`linkedin.mcp.lasupermachine.fr`)'
       - traefik.http.routers.mcp-linkedin.entrypoints=https
       - traefik.http.routers.mcp-linkedin.tls.certresolver=letsencrypt
-      - traefik.http.routers.mcp-linkedin.middlewares=mcp-auth
+      - traefik.http.routers.mcp-linkedin.middlewares=mcp-linkedin-auth
       - traefik.http.services.mcp-linkedin.loadbalancer.server.port=8080
+      - 'traefik.http.middlewares.mcp-linkedin-auth.basicauth.users=ackizit:$$apr1$$/zVHC.3U$$C7y0TwEdujsaMpjUpqSTx1'
     networks:
       - coolify
 
@@ -30,18 +31,19 @@ services:
     pull_policy: build
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-sf", "http://localhost:8080/mcp", "-H", "Accept: text/event-stream", "-o", "/dev/null"]
+      test: ["CMD", "curl", "-s", "--max-time", "5", "-o", "/dev/null", "http://localhost:8080/"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 10s
+      start_period: 15s
     labels:
       - traefik.enable=true
       - 'traefik.http.routers.mcp-annuaire.rule=Host(`annuaire.mcp.lasupermachine.fr`)'
       - traefik.http.routers.mcp-annuaire.entrypoints=https
       - traefik.http.routers.mcp-annuaire.tls.certresolver=letsencrypt
-      - traefik.http.routers.mcp-annuaire.middlewares=mcp-auth
+      - traefik.http.routers.mcp-annuaire.middlewares=mcp-annuaire-auth
       - traefik.http.services.mcp-annuaire.loadbalancer.server.port=8080
+      - 'traefik.http.middlewares.mcp-annuaire-auth.basicauth.users=ackizit:$$apr1$$/zVHC.3U$$C7y0TwEdujsaMpjUpqSTx1'
     networks:
       - coolify
 
@@ -53,18 +55,19 @@ services:
     pull_policy: build
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-sf", "http://localhost:8080/mcp", "-H", "Accept: text/event-stream", "-o", "/dev/null"]
+      test: ["CMD", "curl", "-s", "--max-time", "5", "-o", "/dev/null", "http://localhost:8080/"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 10s
+      start_period: 15s
     labels:
       - traefik.enable=true
       - 'traefik.http.routers.mcp-serp.rule=Host(`serp.mcp.lasupermachine.fr`)'
       - traefik.http.routers.mcp-serp.entrypoints=https
       - traefik.http.routers.mcp-serp.tls.certresolver=letsencrypt
-      - traefik.http.routers.mcp-serp.middlewares=mcp-auth
+      - traefik.http.routers.mcp-serp.middlewares=mcp-serp-auth
       - traefik.http.services.mcp-serp.loadbalancer.server.port=8080
+      - 'traefik.http.middlewares.mcp-serp-auth.basicauth.users=ackizit:$$apr1$$/zVHC.3U$$C7y0TwEdujsaMpjUpqSTx1'
     networks:
       - coolify
 
@@ -76,18 +79,19 @@ services:
     pull_policy: build
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-sf", "http://localhost:8080/mcp", "-H", "Accept: text/event-stream", "-o", "/dev/null"]
+      test: ["CMD", "curl", "-s", "--max-time", "5", "-o", "/dev/null", "http://localhost:8080/"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 10s
+      start_period: 15s
     labels:
       - traefik.enable=true
       - 'traefik.http.routers.mcp-rdap.rule=Host(`rdap.mcp.lasupermachine.fr`)'
       - traefik.http.routers.mcp-rdap.entrypoints=https
       - traefik.http.routers.mcp-rdap.tls.certresolver=letsencrypt
-      - traefik.http.routers.mcp-rdap.middlewares=mcp-auth
+      - traefik.http.routers.mcp-rdap.middlewares=mcp-rdap-auth
       - traefik.http.services.mcp-rdap.loadbalancer.server.port=8080
+      - 'traefik.http.middlewares.mcp-rdap-auth.basicauth.users=ackizit:$$apr1$$/zVHC.3U$$C7y0TwEdujsaMpjUpqSTx1'
     networks:
       - coolify
 
@@ -99,29 +103,19 @@ services:
     pull_policy: build
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-sf", "http://localhost:8080/mcp", "-H", "Accept: text/event-stream", "-o", "/dev/null"]
+      test: ["CMD", "curl", "-s", "--max-time", "5", "-o", "/dev/null", "http://localhost:8080/"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 10s
+      start_period: 15s
     labels:
       - traefik.enable=true
       - 'traefik.http.routers.mcp-siret-extractor.rule=Host(`siret-extractor.mcp.lasupermachine.fr`)'
       - traefik.http.routers.mcp-siret-extractor.entrypoints=https
       - traefik.http.routers.mcp-siret-extractor.tls.certresolver=letsencrypt
-      - traefik.http.routers.mcp-siret-extractor.middlewares=mcp-auth
+      - traefik.http.routers.mcp-siret-extractor.middlewares=mcp-siret-extractor-auth
       - traefik.http.services.mcp-siret-extractor.loadbalancer.server.port=8080
-    networks:
-      - coolify
-
-  # Service factice pour définir le middleware Basic Auth partagé
-  traefik-config:
-    image: alpine:latest
-    command: ["sleep", "infinity"]
-    restart: unless-stopped
-    labels:
-      - traefik.enable=true
-      - 'traefik.http.middlewares.mcp-auth.basicauth.users=ackizit:$$apr1$$/zVHC.3U$$C7y0TwEdujsaMpjUpqSTx1'
+      - 'traefik.http.middlewares.mcp-siret-extractor-auth.basicauth.users=ackizit:$$apr1$$/zVHC.3U$$C7y0TwEdujsaMpjUpqSTx1'
     networks:
       - coolify
 
