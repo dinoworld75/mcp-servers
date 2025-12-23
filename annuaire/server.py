@@ -1,12 +1,59 @@
 """
 Annuaire Entreprises MCP Server
 French business registry API (data.gouv.fr)
+With Basic Auth protection
 """
 
+import os
+import base64
 import httpx
 from fastmcp import FastMCP
+from starlette.applications import Starlette
+from starlette.middleware import Middleware
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import Response
+from starlette.routing import Mount
+
+# Auth credentials from env or defaults
+AUTH_USERNAME = os.environ.get("AUTH_USERNAME", "ackizit")
+AUTH_PASSWORD = os.environ.get("AUTH_PASSWORD", "!Lam3ute!75")
 
 mcp = FastMCP("Annuaire Entreprises")
+
+
+class BasicAuthMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        auth_header = request.headers.get("Authorization", "")
+
+        if not auth_header.startswith("Basic "):
+            return Response(
+                content='{"error": "Unauthorized - Basic Auth required"}',
+                status_code=401,
+                media_type="application/json",
+                headers={"WWW-Authenticate": 'Basic realm="MCP Server"'}
+            )
+
+        try:
+            encoded = auth_header[6:]
+            decoded = base64.b64decode(encoded).decode("utf-8")
+            username, password = decoded.split(":", 1)
+
+            if username != AUTH_USERNAME or password != AUTH_PASSWORD:
+                return Response(
+                    content='{"error": "Invalid credentials"}',
+                    status_code=401,
+                    media_type="application/json",
+                    headers={"WWW-Authenticate": 'Basic realm="MCP Server"'}
+                )
+        except Exception:
+            return Response(
+                content='{"error": "Invalid Authorization header"}',
+                status_code=401,
+                media_type="application/json",
+                headers={"WWW-Authenticate": 'Basic realm="MCP Server"'}
+            )
+
+        return await call_next(request)
 
 
 @mcp.tool
@@ -16,20 +63,12 @@ async def annuaire_recherche(query: str, per_page: int = 5) -> dict:
 
     API gratuite, sans authentification.
 
-    IMPORTANT: Le nom commercial (ex: "Icypeas") est souvent différent du nom légal
-    (ex: "VLOUM"). Si 0 résultats, utiliser serp_pappers pour trouver le nom légal.
-
     Args:
         query: Requête de recherche (nom, SIREN, SIRET, adresse...)
         per_page: Nombre de résultats (défaut: 5)
 
     Returns:
         Liste des entreprises trouvées avec SIRET, adresse, dirigeants
-
-    Exemples:
-        annuaire_recherche("Microsoft 92130")  # Nom + code postal
-        annuaire_recherche("919561266")        # SIREN direct
-        annuaire_recherche("VLOUM Paris")      # Nom légal + ville
     """
     async with httpx.AsyncClient(timeout=10.0) as client:
         url = f"https://recherche-entreprises.api.gouv.fr/search?q={query}&per_page={per_page}"
@@ -70,23 +109,15 @@ async def check_holding(siren: str) -> dict:
     """
     Vérifie si une entreprise est une holding (64.20Z) sans salariés.
 
-    IMPORTANT: Toujours vérifier après annuaire_recherche !
-    Les holdings sont des coquilles financières avec 0 salarié.
-    Les employés travaillent dans l'entité opérationnelle (GROUP, SAS, etc.).
-
-    Si is_holding=True et has_employees=False:
-    → Chercher l'entité opérationnelle du même groupe (ex: "ASMODEE GROUP" au lieu de "ASMODEE HOLDING")
+    Les holdings sont des coquilles financières - les employés sont
+    dans les entités opérationnelles (GROUP, SAS, etc.).
 
     Args:
-        siren: SIREN de l'entreprise à vérifier (9 chiffres)
+        siren: SIREN de l'entreprise à vérifier
 
     Returns:
-        is_holding: True si activité 64.20Z
-        has_employees: True si effectif > 0
-        warning: Message si holding sans salariés
-
-    Exemple:
-        check_holding("798660833")  # ASMODEE HOLDING → is_holding=True, warning="..."
+        is_holding: True si holding sans salariés
+        warning: Message d'alerte si c'est une holding
     """
     async with httpx.AsyncClient(timeout=10.0) as client:
         url = f"https://recherche-entreprises.api.gouv.fr/search?q={siren}&per_page=1"
@@ -106,7 +137,6 @@ async def check_holding(siren: str) -> dict:
         activite = entreprise.get("activite_principale", "")
         effectif = entreprise.get("tranche_effectif_salarie")
 
-        # 64.20Z = Activités des sociétés holding
         is_holding = activite == "64.20Z"
         has_employees = effectif and effectif not in ["NN", "00", None, ""]
 
@@ -150,3 +180,15 @@ def calcul_tva(siren: str) -> dict:
         "siren": siren,
         "tva": tva
     }
+
+
+def create_authenticated_app():
+    mcp_app = mcp.http_app(path="/mcp")
+    app = Starlette(
+        routes=[Mount("/", app=mcp_app)],
+        middleware=[Middleware(BasicAuthMiddleware)]
+    )
+    return app
+
+
+app = create_authenticated_app()

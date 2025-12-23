@@ -15,4 +15,4 @@ COPY server.py .
 # FastMCP HTTP mode on port 8080
 EXPOSE 8080
 
-CMD ["fastmcp", "run", "server.py:mcp", "--transport", "streamable-http", "--port", "8080", "--host", "0.0.0.0"]
+CMD ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8080"]

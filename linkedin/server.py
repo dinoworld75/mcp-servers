@@ -1,14 +1,27 @@
 """
 LinkedIn MCP Server
 Scrape LinkedIn profiles and company pages
+With Basic Auth protection
 """
 
+import os
+import base64
 import httpx
 from fastmcp import FastMCP
-from typing import Optional
+from starlette.applications import Starlette
+from starlette.middleware import Middleware
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import Response
+from starlette.routing import Mount
 
+# Auth credentials from env or defaults
+AUTH_USERNAME = os.environ.get("AUTH_USERNAME", "ackizit")
+AUTH_PASSWORD = os.environ.get("AUTH_PASSWORD", "!Lam3ute!75")
+
+# Create MCP server
 mcp = FastMCP("LinkedIn Scraper")
 
+# Internal API auth
 BASIC_AUTH = "YWNraXppdDohTGFtM3V0ZSE3NQ=="
 HEADERS = {
     "Authorization": f"Basic {BASIC_AUTH}",
@@ -16,32 +29,51 @@ HEADERS = {
 }
 
 
+class BasicAuthMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        auth_header = request.headers.get("Authorization", "")
+
+        if not auth_header.startswith("Basic "):
+            return Response(
+                content='{"error": "Unauthorized - Basic Auth required"}',
+                status_code=401,
+                media_type="application/json",
+                headers={"WWW-Authenticate": 'Basic realm="MCP Server"'}
+            )
+
+        try:
+            encoded = auth_header[6:]
+            decoded = base64.b64decode(encoded).decode("utf-8")
+            username, password = decoded.split(":", 1)
+
+            if username != AUTH_USERNAME or password != AUTH_PASSWORD:
+                return Response(
+                    content='{"error": "Invalid credentials"}',
+                    status_code=401,
+                    media_type="application/json",
+                    headers={"WWW-Authenticate": 'Basic realm="MCP Server"'}
+                )
+        except Exception:
+            return Response(
+                content='{"error": "Invalid Authorization header"}',
+                status_code=401,
+                media_type="application/json",
+                headers={"WWW-Authenticate": 'Basic realm="MCP Server"'}
+            )
+
+        return await call_next(request)
+
+
 @mcp.tool
 async def linkedin_profile(url: str) -> dict:
     """
     Extrait les informations d'un profil LinkedIn.
 
-    ATTENTION: Le profil LinkedIn peut être OBSOLÈTE !
-    La personne peut avoir changé d'entreprise sans mettre à jour son profil.
-    Croiser avec l'email professionnel (domaine) pour vérifier.
-
     Args:
         url: URL du profil LinkedIn (ex: linkedin.com/in/john-doe)
 
     Returns:
-        name: Nom complet
-        company: Entreprise actuelle (peut être obsolète)
-        company_url: URL LinkedIn de l'entreprise
-        location: Localisation
-
-    Workflow:
-        1. linkedin_profile(url) → company_url
-        2. linkedin_company(company_url) → website, postal_code
-        3. annuaire_recherche(company + postal_code) → SIRET
-
-    Exemple:
-        linkedin_profile("https://linkedin.com/in/pierre-dupont")
-        # → {company: "Icypeas", company_url: "https://linkedin.com/company/icypeas"}
+        Infos du profil: nom, company, company_url, location, etc.
     """
     async with httpx.AsyncClient(timeout=30.0) as client:
         api_url = f"https://scrap-lk-profile.lasupermachine.fr/api/extract?url={url}&method=combined"
@@ -73,17 +105,7 @@ async def linkedin_company(url: str, timeout: int = 25) -> dict:
         timeout: Timeout en secondes (défaut: 25)
 
     Returns:
-        company_name: Nom commercial (peut différer du nom légal !)
-        website: Site web de l'entreprise
-        postal_code: Code postal du siège
-        headquarters: Adresse du siège
-
-    IMPORTANT: Le company_name est le nom COMMERCIAL, pas le nom légal.
-    Utiliser le postal_code pour affiner la recherche dans annuaire_recherche.
-
-    Exemple:
-        linkedin_company("https://linkedin.com/company/icypeas")
-        # → {company_name: "Icypeas", website: "icypeas.com", postal_code: "75009"}
+        Infos de l'entreprise: nom, website, adresse, code postal, etc.
     """
     async with httpx.AsyncClient(timeout=float(timeout) + 5) as client:
         api_url = "https://scrap-lk-company.lasupermachine.fr/api/scrape"
@@ -106,3 +128,18 @@ async def linkedin_company(url: str, timeout: int = 25) -> dict:
             "locations_secondary": data.get("locations_secondary", []),
             "raw": data
         }
+
+
+def create_authenticated_app():
+    """Create Starlette app with Basic Auth middleware wrapping MCP."""
+    mcp_app = mcp.http_app(path="/mcp")
+
+    app = Starlette(
+        routes=[Mount("/", app=mcp_app)],
+        middleware=[Middleware(BasicAuthMiddleware)]
+    )
+    return app
+
+
+# For uvicorn: uvicorn server:app --host 0.0.0.0 --port 8080
+app = create_authenticated_app()

@@ -17,9 +17,7 @@ services:
       - 'traefik.http.routers.mcp-linkedin.rule=Host(`linkedin.mcp.lasupermachine.fr`)'
       - traefik.http.routers.mcp-linkedin.entrypoints=https
       - traefik.http.routers.mcp-linkedin.tls.certresolver=letsencrypt
-      - traefik.http.routers.mcp-linkedin.middlewares=mcp-linkedin-auth
       - traefik.http.services.mcp-linkedin.loadbalancer.server.port=8080
-      - 'traefik.http.middlewares.mcp-linkedin-auth.basicauth.users=ackizit:$$apr1$$/zVHC.3U$$C7y0TwEdujsaMpjUpqSTx1'
     networks:
       - coolify
 
@@ -41,9 +39,7 @@ services:
       - 'traefik.http.routers.mcp-annuaire.rule=Host(`annuaire.mcp.lasupermachine.fr`)'
       - traefik.http.routers.mcp-annuaire.entrypoints=https
       - traefik.http.routers.mcp-annuaire.tls.certresolver=letsencrypt
-      - traefik.http.routers.mcp-annuaire.middlewares=mcp-annuaire-auth
       - traefik.http.services.mcp-annuaire.loadbalancer.server.port=8080
-      - 'traefik.http.middlewares.mcp-annuaire-auth.basicauth.users=ackizit:$$apr1$$/zVHC.3U$$C7y0TwEdujsaMpjUpqSTx1'
     networks:
       - coolify
 
@@ -65,9 +61,7 @@ services:
       - 'traefik.http.routers.mcp-serp.rule=Host(`serp.mcp.lasupermachine.fr`)'
       - traefik.http.routers.mcp-serp.entrypoints=https
       - traefik.http.routers.mcp-serp.tls.certresolver=letsencrypt
-      - traefik.http.routers.mcp-serp.middlewares=mcp-serp-auth
       - traefik.http.services.mcp-serp.loadbalancer.server.port=8080
-      - 'traefik.http.middlewares.mcp-serp-auth.basicauth.users=ackizit:$$apr1$$/zVHC.3U$$C7y0TwEdujsaMpjUpqSTx1'
     networks:
       - coolify
 
@@ -89,9 +83,7 @@ services:
       - 'traefik.http.routers.mcp-rdap.rule=Host(`rdap.mcp.lasupermachine.fr`)'
       - traefik.http.routers.mcp-rdap.entrypoints=https
       - traefik.http.routers.mcp-rdap.tls.certresolver=letsencrypt
-      - traefik.http.routers.mcp-rdap.middlewares=mcp-rdap-auth
       - traefik.http.services.mcp-rdap.loadbalancer.server.port=8080
-      - 'traefik.http.middlewares.mcp-rdap-auth.basicauth.users=ackizit:$$apr1$$/zVHC.3U$$C7y0TwEdujsaMpjUpqSTx1'
     networks:
       - coolify
 
@@ -113,9 +105,7 @@ services:
       - 'traefik.http.routers.mcp-siret-extractor.rule=Host(`siret-extractor.mcp.lasupermachine.fr`)'
       - traefik.http.routers.mcp-siret-extractor.entrypoints=https
       - traefik.http.routers.mcp-siret-extractor.tls.certresolver=letsencrypt
-      - traefik.http.routers.mcp-siret-extractor.middlewares=mcp-siret-extractor-auth
       - traefik.http.services.mcp-siret-extractor.loadbalancer.server.port=8080
-      - 'traefik.http.middlewares.mcp-siret-extractor-auth.basicauth.users=ackizit:$$apr1$$/zVHC.3U$$C7y0TwEdujsaMpjUpqSTx1'
     networks:
       - coolify
 
