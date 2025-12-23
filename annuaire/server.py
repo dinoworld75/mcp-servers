@@ -8,11 +8,6 @@ import os
 import base64
 import httpx
 from fastmcp import FastMCP
-from starlette.applications import Starlette
-from starlette.middleware import Middleware
-from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.responses import Response
-from starlette.routing import Mount
 
 # Auth credentials from env or defaults
 AUTH_USERNAME = os.environ.get("AUTH_USERNAME", "ackizit")
@@ -21,17 +16,23 @@ AUTH_PASSWORD = os.environ.get("AUTH_PASSWORD", "!Lam3ute!75")
 mcp = FastMCP("Annuaire Entreprises")
 
 
-class BasicAuthMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request, call_next):
-        auth_header = request.headers.get("Authorization", "")
+class BasicAuthMiddleware:
+    """ASGI middleware for Basic Auth."""
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        headers = dict(scope.get("headers", []))
+        auth_header = headers.get(b"authorization", b"").decode("utf-8")
 
         if not auth_header.startswith("Basic "):
-            return Response(
-                content='{"error": "Unauthorized - Basic Auth required"}',
-                status_code=401,
-                media_type="application/json",
-                headers={"WWW-Authenticate": 'Basic realm="MCP Server"'}
-            )
+            await self._send_401(send)
+            return
 
         try:
             encoded = auth_header[6:]
@@ -39,21 +40,27 @@ class BasicAuthMiddleware(BaseHTTPMiddleware):
             username, password = decoded.split(":", 1)
 
             if username != AUTH_USERNAME or password != AUTH_PASSWORD:
-                return Response(
-                    content='{"error": "Invalid credentials"}',
-                    status_code=401,
-                    media_type="application/json",
-                    headers={"WWW-Authenticate": 'Basic realm="MCP Server"'}
-                )
+                await self._send_401(send)
+                return
         except Exception:
-            return Response(
-                content='{"error": "Invalid Authorization header"}',
-                status_code=401,
-                media_type="application/json",
-                headers={"WWW-Authenticate": 'Basic realm="MCP Server"'}
-            )
+            await self._send_401(send)
+            return
 
-        return await call_next(request)
+        await self.app(scope, receive, send)
+
+    async def _send_401(self, send):
+        await send({
+            "type": "http.response.start",
+            "status": 401,
+            "headers": [
+                [b"content-type", b"application/json"],
+                [b"www-authenticate", b'Basic realm="MCP Server"']
+            ]
+        })
+        await send({
+            "type": "http.response.body",
+            "body": b'{"error": "Unauthorized"}'
+        })
 
 
 @mcp.tool
@@ -183,12 +190,9 @@ def calcul_tva(siren: str) -> dict:
 
 
 def create_authenticated_app():
-    mcp_app = mcp.http_app()
-    app = Starlette(
-        routes=[Mount("/mcp", app=mcp_app)],
-        middleware=[Middleware(BasicAuthMiddleware)]
-    )
-    return app
+    """Wrap FastMCP app with Basic Auth middleware."""
+    mcp_app = mcp.http_app(path="/mcp")
+    return BasicAuthMiddleware(mcp_app)
 
 
 app = create_authenticated_app()
