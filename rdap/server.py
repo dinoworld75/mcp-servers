@@ -30,6 +30,12 @@ class BasicAuthMiddleware:
             await self.app(scope, receive, send)
             return
 
+        # Allow healthcheck on root path without auth
+        path = scope.get("path", "")
+        if path == "/" or path == "":
+            await self._send_health(send)
+            return
+
         headers = dict(scope.get("headers", []))
         auth_header = headers.get(b"authorization", b"").decode("utf-8")
 
@@ -63,6 +69,17 @@ class BasicAuthMiddleware:
         await send({
             "type": "http.response.body",
             "body": b'{"error": "Unauthorized"}'
+        })
+
+    async def _send_health(self, send):
+        await send({
+            "type": "http.response.start",
+            "status": 200,
+            "headers": [[b"content-type", b"application/json"]]
+        })
+        await send({
+            "type": "http.response.body",
+            "body": b'{"status": "ok"}'
         })
 
 
