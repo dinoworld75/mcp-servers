@@ -96,9 +96,9 @@ async def rdap_whois(domain: str) -> dict:
 
 
 def create_authenticated_app():
-    mcp_app = mcp.http_app(path="/mcp")
+    mcp_app = mcp.http_app()
     app = Starlette(
-        routes=[Mount("/", app=mcp_app)],
+        routes=[Mount("/mcp", app=mcp_app)],
         middleware=[Middleware(BasicAuthMiddleware)]
     )
     return app
