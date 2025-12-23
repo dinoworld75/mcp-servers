@@ -6,11 +6,18 @@ services:
     image: 'mcp-linkedin:latest'
     pull_policy: build
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8080/mcp", "-H", "Accept: text/event-stream", "-o", "/dev/null"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
     labels:
       - traefik.enable=true
       - 'traefik.http.routers.mcp-linkedin.rule=Host(`linkedin.mcp.lasupermachine.fr`)'
       - traefik.http.routers.mcp-linkedin.entrypoints=https
       - traefik.http.routers.mcp-linkedin.tls.certresolver=letsencrypt
+      - traefik.http.routers.mcp-linkedin.middlewares=mcp-auth
       - traefik.http.services.mcp-linkedin.loadbalancer.server.port=8080
     networks:
       - coolify
@@ -22,11 +29,18 @@ services:
     image: 'mcp-annuaire:latest'
     pull_policy: build
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8080/mcp", "-H", "Accept: text/event-stream", "-o", "/dev/null"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
     labels:
       - traefik.enable=true
       - 'traefik.http.routers.mcp-annuaire.rule=Host(`annuaire.mcp.lasupermachine.fr`)'
       - traefik.http.routers.mcp-annuaire.entrypoints=https
       - traefik.http.routers.mcp-annuaire.tls.certresolver=letsencrypt
+      - traefik.http.routers.mcp-annuaire.middlewares=mcp-auth
       - traefik.http.services.mcp-annuaire.loadbalancer.server.port=8080
     networks:
       - coolify
@@ -38,11 +52,18 @@ services:
     image: 'mcp-serp:latest'
     pull_policy: build
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8080/mcp", "-H", "Accept: text/event-stream", "-o", "/dev/null"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
     labels:
       - traefik.enable=true
       - 'traefik.http.routers.mcp-serp.rule=Host(`serp.mcp.lasupermachine.fr`)'
       - traefik.http.routers.mcp-serp.entrypoints=https
       - traefik.http.routers.mcp-serp.tls.certresolver=letsencrypt
+      - traefik.http.routers.mcp-serp.middlewares=mcp-auth
       - traefik.http.services.mcp-serp.loadbalancer.server.port=8080
     networks:
       - coolify
@@ -54,11 +75,18 @@ services:
     image: 'mcp-rdap:latest'
     pull_policy: build
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8080/mcp", "-H", "Accept: text/event-stream", "-o", "/dev/null"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
     labels:
       - traefik.enable=true
       - 'traefik.http.routers.mcp-rdap.rule=Host(`rdap.mcp.lasupermachine.fr`)'
       - traefik.http.routers.mcp-rdap.entrypoints=https
       - traefik.http.routers.mcp-rdap.tls.certresolver=letsencrypt
+      - traefik.http.routers.mcp-rdap.middlewares=mcp-auth
       - traefik.http.services.mcp-rdap.loadbalancer.server.port=8080
     networks:
       - coolify
@@ -70,12 +98,30 @@ services:
     image: 'mcp-siret-extractor:latest'
     pull_policy: build
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8080/mcp", "-H", "Accept: text/event-stream", "-o", "/dev/null"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
     labels:
       - traefik.enable=true
       - 'traefik.http.routers.mcp-siret-extractor.rule=Host(`siret-extractor.mcp.lasupermachine.fr`)'
       - traefik.http.routers.mcp-siret-extractor.entrypoints=https
       - traefik.http.routers.mcp-siret-extractor.tls.certresolver=letsencrypt
+      - traefik.http.routers.mcp-siret-extractor.middlewares=mcp-auth
       - traefik.http.services.mcp-siret-extractor.loadbalancer.server.port=8080
+    networks:
+      - coolify
+
+  # Service factice pour définir le middleware Basic Auth partagé
+  traefik-config:
+    image: alpine:latest
+    command: ["sleep", "infinity"]
+    restart: unless-stopped
+    labels:
+      - traefik.enable=true
+      - 'traefik.http.middlewares.mcp-auth.basicauth.users=ackizit:$$apr1$$/zVHC.3U$$C7y0TwEdujsaMpjUpqSTx1'
     networks:
       - coolify
 
