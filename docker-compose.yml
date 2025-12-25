@@ -109,6 +109,32 @@ services:
     networks:
       - coolify
 
+  supabase:
+    build:
+      context: ./supabase
+      dockerfile: Dockerfile
+    image: 'mcp-supabase:latest'
+    pull_policy: build
+    restart: unless-stopped
+    environment:
+      - SUPABASE_URL=https://supabase.lasupermachine.fr
+      - SUPABASE_ANON_KEY=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJzdXBhYmFzZSIsImlhdCI6MTc2MTg4MjE4MCwiZXhwIjo0OTE3NTU1NzgwLCJyb2xlIjoiYW5vbiJ9.jtdQs0VsEWvZI0tz0jxslqCqo6lhcEt08V6__vsfhgU
+      - SUPABASE_SERVICE_KEY=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJzdXBhYmFzZSIsImlhdCI6MTc2MTg4MjE4MCwiZXhwIjo0OTE3NTU1NzgwLCJyb2xlIjoic2VydmljZV9yb2xlIn0.5ybxQEB0GmjAhJwZR9eItS7s9VH7zAEl8CAj6Z3KhOs
+    healthcheck:
+      test: ["CMD", "curl", "-s", "--max-time", "5", "-o", "/dev/null", "http://localhost:8080/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    labels:
+      - traefik.enable=true
+      - 'traefik.http.routers.mcp-supabase.rule=Host(`supabase.mcp.lasupermachine.fr`)'
+      - traefik.http.routers.mcp-supabase.entrypoints=https
+      - traefik.http.routers.mcp-supabase.tls.certresolver=letsencrypt
+      - traefik.http.services.mcp-supabase.loadbalancer.server.port=8080
+    networks:
+      - coolify
+
 networks:
   coolify:
     external: true
