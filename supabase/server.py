@@ -95,6 +95,25 @@ class BasicAuthMiddleware:
         })
 
 
+# Internal helper function (not a tool) - can be called directly
+async def _execute_sql_internal(query: str, read_only: bool = True) -> dict:
+    """Internal SQL execution - used by other tools."""
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        try:
+            response = await client.post(
+                f"{SUPABASE_URL}/rest/v1/rpc/execute_sql",
+                json={"query": query, "read_only": read_only},
+                headers=get_headers()
+            )
+
+            if response.status_code == 200:
+                return {"success": True, "data": response.json()}
+            else:
+                return {"success": False, "error": response.text, "status": response.status_code}
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
+
 @mcp.tool
 async def execute_sql(query: str, read_only: bool = True) -> dict:
     """
@@ -112,20 +131,7 @@ async def execute_sql(query: str, read_only: bool = True) -> dict:
     Returns:
         Query results or operation status
     """
-    async with httpx.AsyncClient(timeout=30.0) as client:
-        try:
-            response = await client.post(
-                f"{SUPABASE_URL}/rest/v1/rpc/execute_sql",
-                json={"query": query, "read_only": read_only},
-                headers=get_headers()
-            )
-
-            if response.status_code == 200:
-                return {"success": True, "data": response.json()}
-            else:
-                return {"success": False, "error": response.text, "status": response.status_code}
-        except Exception as e:
-            return {"success": False, "error": str(e)}
+    return await _execute_sql_internal(query, read_only)
 
 
 @mcp.tool
@@ -145,7 +151,7 @@ async def list_tables(schema: str = "public") -> dict:
     WHERE table_schema = '{schema}'
     ORDER BY table_name
     """
-    return await execute_sql(query, read_only=True)
+    return await _execute_sql_internal(query, read_only=True)
 
 
 @mcp.tool
@@ -171,7 +177,7 @@ async def describe_table(table_name: str, schema: str = "public") -> dict:
     WHERE table_schema = '{schema}' AND table_name = '{table_name}'
     ORDER BY ordinal_position
     """
-    return await execute_sql(query, read_only=True)
+    return await _execute_sql_internal(query, read_only=True)
 
 
 @mcp.tool
@@ -371,7 +377,7 @@ async def get_database_stats() -> dict:
     JOIN pg_database ON pg_database.oid = pg_stat_database.datid
     WHERE pg_database.datname = current_database()
     """
-    return await execute_sql(query, read_only=True)
+    return await _execute_sql_internal(query, read_only=True)
 
 
 @mcp.tool
@@ -394,7 +400,7 @@ async def get_table_row_counts(schema: str = "public") -> dict:
     WHERE schemaname = '{schema}'
     ORDER BY n_live_tup DESC
     """
-    return await execute_sql(query, read_only=True)
+    return await _execute_sql_internal(query, read_only=True)
 
 
 def create_authenticated_app():
